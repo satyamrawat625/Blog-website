@@ -9,6 +9,8 @@ const jwt = require('jsonwebtoken');
 const cookieParser = require('cookie-parser');
 const multer = require('multer');
 const uploadMiddleware = multer({ dest: 'uploads/' });
+require("dotenv").config()
+
 
 const fs = require('fs');
 
