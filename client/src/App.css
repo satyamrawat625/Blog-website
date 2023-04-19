@@ -142,11 +142,12 @@ form.register h1 {
 div.post-page div.image {
     max-height: 300px;
     display: flex;
+    justify-content: center;
     overflow: hidden;
 }
 
 div.post-page div.image img {
-    object-fit: cover;
+    object-fit:contain;
     object-position: center center;
     width: 100%;
 }
