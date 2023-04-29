@@ -1,3 +1,14 @@
+/* features to add   : 
+uploading images to mongodb than static folder
+on uploading incorrect form , show error that all files not uploaded
+on modifying  , show that img has already been uploaded rather than showing blank
+
+improve css , img width  height on uploading & autosize them . 
+
+show the images in sorted  order by most recently modified .
+OR 
+add a feature that u can sort by modified date, created date  , size
+*/
 const express = require('express');
 const cors = require('cors');
 const mongoose = require("mongoose");
@@ -63,6 +74,9 @@ app.delete('/post/:id', async (req, res) => {
   jwt.verify(token, secret, {}, async (err,info) => {
     if (err) throw err;
     const postDoc = await Post.findById(id);
+    if (!postDoc) {
+      return res.status(400).json('post not found');
+    }
     const isAuthor = JSON.stringify(postDoc.author) === JSON.stringify(info.id);
     if (!isAuthor) {
       return res.status(400).json('you are not the author');
@@ -136,7 +150,11 @@ app.put('/post',uploadMiddleware.single('file'), async (req,res) => {//modify
     if (err) throw err;
     const {id,title,summary,content} = req.body;
     const postDoc = await Post.findById(id);
+    if (!postDoc) {
+      return res.status(404).json('Post not found');
+    }
     const isAuthor = JSON.stringify(postDoc.author) === JSON.stringify(info.id);
+    
     if (!isAuthor) {
       return res.status(400).json('you are not the author');
     }
@@ -166,9 +184,12 @@ app.get('/post', async (req,res) => {
 app.get('/post/:id', async (req, res) => {
   const {id} = req.params;
   const postDoc = await Post.findById(id).populate('author', ['username']);
+  if (!postDoc) {
+    return res.status(404).json('Post not found');
+  }
   res.json(postDoc);
 })
 
-app.listen(4000,function (req,res) {
+app.listen(4000,function (req,res){
   console.log("Server running on port: 4000")
 });

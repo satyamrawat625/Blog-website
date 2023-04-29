@@ -12,7 +12,7 @@ export default function Header() {
         setUserInfo(userInfo);
       });
     });
-  }, []);
+  }, [setUserInfo]);
 
   function logout() {
     fetch('http://localhost:4000/logout', {
