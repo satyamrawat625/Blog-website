@@ -1,3 +1,4 @@
+// creating a posts schema 
 const mongoose = require('mongoose');
 const {Schema,model} = mongoose;
 

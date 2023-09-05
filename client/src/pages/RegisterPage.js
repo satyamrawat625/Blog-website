@@ -1,8 +1,11 @@
 import {useState} from "react";
-
+//deals with register page
 export default function RegisterPage() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+
+
+  // on submit , go to register route & send a post request with username , password
   async function register(ev) {
     ev.preventDefault();
     const response = await fetch('http://localhost:4000/register', {

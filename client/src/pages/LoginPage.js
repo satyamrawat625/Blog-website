@@ -7,7 +7,7 @@ export default function LoginPage() {
   const [password,setPassword] = useState('');
   const [redirect,setRedirect] = useState(false);
   const {setUserInfo} = useContext(UserContext);
-  
+  // send a get post request to get user name , password to verify credentials
   async function login(ev) {
     ev.preventDefault();
     const response = await fetch('http://localhost:4000/login', {
@@ -25,7 +25,7 @@ export default function LoginPage() {
       alert('wrong credentials');
     }
   }
-
+// if correct credentials, redirect to root / home page
   if (redirect) {
     return <Navigate to={'/'} />
   }

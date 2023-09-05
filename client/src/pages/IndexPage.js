@@ -2,6 +2,7 @@
 import Post from "../Post";
 import {useEffect, useState} from "react";
 
+// component to view all posts
 export default function IndexPage() {
   const [posts,setPosts] = useState([]);
   useEffect(() => {

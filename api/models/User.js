@@ -1,3 +1,4 @@
+// creating a user schema
 const mongoose = require('mongoose');
 const {Schema, model} = mongoose;
 

@@ -1,14 +1,4 @@
-/* features to add   : 
-uploading images to mongodb than static folder
-on uploading incorrect form , show error that all files not uploaded
-on modifying  , show that img has already been uploaded rather than showing blank
 
-improve css , img width  height on uploading & autosize them . 
-
-show the images in sorted  order by most recently modified .
-OR 
-add a feature that u can sort by modified date, created date  , size
-*/
 const express = require('express');
 const cors = require('cors');
 const mongoose = require("mongoose");
@@ -21,13 +11,14 @@ const cookieParser = require('cookie-parser');
 const multer = require('multer');
 const uploadMiddleware = multer({ dest: 'uploads/' });
 require("dotenv").config()
+const path = require("path");
 
 
 const fs = require('fs');
 
 const salt = bcrypt.genSaltSync(10);
-const secret = 'asdfe45we45w345wegw345werjktjwertkj';
-
+const secret = process.env.SECRET;
+// setting up cors ,front end at port3000
 app.use(cors({credentials:true,origin:'http://localhost:3000'}));
 app.use(express.json());
 app.use(cookieParser());
@@ -36,10 +27,40 @@ mongoose.set('strictQuery',false)
 
 mongoose.connect(process.env.MONGO_URL);
 
+
+// --------------------------deployment------------------------------
+
+// const __dirname1 = path.resolve();
+
+// if (process.env.NODE_ENV === "production") {
+//   app.use(express.static(path.join(__dirname1, "/frontend/build")));
+
+//   app.get("*", (req, res) =>
+//     res.sendFile(path.resolve(__dirname1, "frontend", "build", "index.html"))
+//   );
+// } else {
+//   app.get("/", (req, res) => {
+//     res.send("API is running..");
+//   });
+// }
+
+// --------------------------deployment------------------------------
+
+// Error Handling middlewares
+
+// const PORT = process.env.PORT;
+
+// const server = app.listen(
+//   PORT,
+//   console.log(`Server running on PORT ${PORT}...`)
+// );
+
+// route to register the user
 app.post('/register', async (req,res) => {
-  const {username,password} = req.body;
+  const {username,password} = req.body; //extract username , pswd
+
   try{
-    const userDoc = await User.create({
+    const userDoc = await User.create({//create a new user document in DB
       username,
       password:bcrypt.hashSync(password,salt),
     });
@@ -49,13 +70,22 @@ app.post('/register', async (req,res) => {
     res.status(400).json(e);
   }
 });
-
+// 
 app.post('/login', async (req,res) => {
   const {username,password} = req.body;
+
+  // search user by username
   const userDoc = await User.findOne({username});
+
+  if(!userDoc){//if user not found
+    res.status(400).json('Wrong credentials');
+    return ;
+  }
+
   const passOk = bcrypt.compareSync(password, userDoc.password);
+  // if hashes match,user exist
   if (passOk) {
-    // logged in
+    // log user in
     jwt.sign({username,id:userDoc._id}, secret, {}, (err,token) => {
       if (err) throw err;
       res.cookie('token', token).json({
@@ -68,15 +98,24 @@ app.post('/login', async (req,res) => {
   }
 });
 
+// dynamic route
 app.delete('/post/:id', async (req, res) => {
   const {id} = req.params;
-  const {token} = req.cookies;
+  const {token} = req.cookies;//extracts jwt token from client cookies
+
+  //verifies the token
   jwt.verify(token, secret, {}, async (err,info) => {
     if (err) throw err;
+
+    // jwt token is valid
+
+    // search user doc by id
     const postDoc = await Post.findById(id);
     if (!postDoc) {
       return res.status(400).json('post not found');
     }
+
+    // find if user is author of post
     const isAuthor = JSON.stringify(postDoc.author) === JSON.stringify(info.id);
     if (!isAuthor) {
       return res.status(400).json('you are not the author');
@@ -93,36 +132,50 @@ app.delete('/post/:id', async (req, res) => {
 });
 
 
-app.get('/profile', (req,res) => {
-  const {token} = req.cookies;
+// Route to retrieve the user's profile
+app.get('/profile', (req, res) => {
+  const { token } = req.cookies;
+
+  // Check if a token is present in the request's cookies. It means that a user is already logged in (user session handling)
   if (!token) {
     return res.status(401).json('Unauthorized');
   }
-  jwt.verify(token, secret, {}, (err,info) => {
+
+  // Verify the token's authenticity 
+  jwt.verify(token, secret, {}, (err, info) => {
     if (err) throw err;
     res.json(info);
   });
 });
 
-
+// logs out user
 app.post('/logout', (req,res) => {
-  res.cookie('token', '').json('ok');
+  res.cookie('token', '').json('ok');//sets a response cookie named 'token' with an empty string as its val
+  //  By setting an empty string as the cookie's value, it effectively clears or removes the 'token' cookie from the user's browser.
+
 });
 
+// creating a new post 
 app.post('/post', uploadMiddleware.single('file'), async (req,res) => {
-  if (!req.file) {
+  if (!req.file) {//no file found(photo)
     return res.status(400).json('No file uploaded');
   }
   const {originalname,path} = req.file;
+  
+  // extracting img extension
   const parts = originalname.split('.');
-  const ext = parts[parts.length - 1];
-  const newPath = path+'.'+ext;
+  const imgExtension = parts[parts.length - 1];
+  
+  const newPath = path+'.'+imgExtension;
   fs.renameSync(path, newPath);
 
   const {token} = req.cookies;
   jwt.verify(token, secret, {}, async (err,info) => {
     if (err) throw err;
+
+    // extract title , summary , content 
     const {title,summary,content} = req.body;
+    // unique id generated by mongodb is assigned to the post
     const postDoc = await Post.create({
       title,
       summary,
@@ -130,26 +183,33 @@ app.post('/post', uploadMiddleware.single('file'), async (req,res) => {
       cover:newPath,
       author:info.id,
     });
+    // respond to client with a json object with the post docuemnt
     res.json(postDoc);
   });
 
 });
 
-
+// updating an existing post using Put request
 app.put('/post',uploadMiddleware.single('file'), async (req,res) => {//modify
   let newPath = null;
-  if (req.file) {
+
+  if (req.file) {//if new pic (file) uploaded
     const {originalname,path} = req.file;
     const parts = originalname.split('.');
-    const ext = parts[parts.length - 1];
-    newPath = path+'.'+ext;
+    const imgExtension = parts[parts.length - 1];
+    newPath = path+'.'+imgExtension;
     fs.renameSync(path, newPath);
   } 
+
   const {token} = req.cookies;
+
   jwt.verify(token, secret, {}, async (err,info) => {
     if (err) throw err;
     const {id,title,summary,content} = req.body;
     const postDoc = await Post.findById(id);
+
+    // if post does not exist
+
     if (!postDoc) {
       return res.status(404).json('Post not found');
     }
@@ -171,18 +231,22 @@ app.put('/post',uploadMiddleware.single('file'), async (req,res) => {//modify
 
 });
 
-
+// to get a list of posts from database
 app.get('/post', async (req,res) => {
   res.json(
-    await Post.find()
+    await Post.find()//Post is mongoose model 
       .populate('author', ['username'])
-      .sort({createdAt: -1})
-      .limit(20)
+      .sort({createdAt: -1})//sort recent posts first
+      .limit(20)// limit to max 20 posts
   );
 });
 
+// view a specific post
 app.get('/post/:id', async (req, res) => {
   const {id} = req.params;
+
+  // Query the database to find the post by its ID and populate the author field with the username
+
   const postDoc = await Post.findById(id).populate('author', ['username']);
   if (!postDoc) {
     return res.status(404).json('Post not found');

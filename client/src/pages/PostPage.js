@@ -4,10 +4,14 @@ import {formatISO9075} from "date-fns";
 import {UserContext} from "../UserContext";
 import {Link} from 'react-router-dom';
 
+// This component is designed to display detailed information about a post, including its title, author, date, cover image, and content. If the current user is the author of the post, they will see an "Edit" button that allows them to edit the post.
+
 export default function PostPage() {
   const [postInfo,setPostInfo] = useState(null);
   const {userInfo} = useContext(UserContext);
   const {id} = useParams();
+  
+  // fetch post data using id
   useEffect(() => {
     fetch(`http://localhost:4000/post/${id}`)
       .then(response => {

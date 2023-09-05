@@ -11,6 +11,7 @@ export default function EditPost() {
   const [files, setFiles] = useState("");
   const [redirect, setRedirect] = useState(false);
 
+  // send a post request to /post route when user clicks on edit post & comes to this page 
   useEffect(() => {
     fetch("http://localhost:4000/post/" + id).then((response) => {
       response.json().then((postInfo) => {
@@ -40,7 +41,7 @@ export default function EditPost() {
       setRedirect(true);
     }
   }
-
+// delete post function
   async function deletePost() {
     const response = await fetch("http://localhost:4000/post/" + id, {
       method: "DELETE",
